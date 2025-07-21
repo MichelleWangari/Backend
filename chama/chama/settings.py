@@ -40,7 +40,11 @@ INSTALLED_APPS = [
     'chama_app',
     'rest_framework',
     'corsheaders',
+   
 ]
+
+AUTH_USER_MODEL = 'chama_app.User'
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -80,8 +84,12 @@ WSGI_APPLICATION = 'chama.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'tujenge_db',
+        'USER': 'postgres',  
+        'PASSWORD': 'michy2290',
+        'HOST': 'localhost',
+        'PORT': '5432',  
     }
 }
 
@@ -126,3 +134,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ]
+}
+
