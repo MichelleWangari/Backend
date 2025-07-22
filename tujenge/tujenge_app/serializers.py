@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from .models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import AuthenticationFailed
 from datetime import timedelta
 from django.utils import timezone
 
@@ -18,20 +19,29 @@ class SignupSerializer(serializers.ModelSerializer):
         return user
 
 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-     
+        
         token['role'] = user.role
         token['email'] = user.email
         return token
 
     def validate(self, attrs):
-     
+       
         attrs['username'] = attrs.get('email')
-        return super().validate(attrs)
 
+        data = super().validate(attrs)
+
+        
+        if not self.user.is_verified:
+            raise AuthenticationFailed("Please verify your account with the OTP sent to your email.")
+
+        return data
 
 class OTPVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -58,3 +68,8 @@ class OTPVerificationSerializer(serializers.Serializer):
 
         data['user'] = user
         return data
+    
+class RoleUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['role']
