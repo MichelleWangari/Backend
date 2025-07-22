@@ -17,6 +17,6 @@ class SignupView(APIView):
             user.otp = otp
             user.otp_created_at = timezone.now()
             user.save()
-            # Here, you would send OTP via email (we can use SendGrid/SMTP later)
+ 
             return Response({"message": "User created. OTP sent to email."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

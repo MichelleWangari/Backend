@@ -1,7 +1,10 @@
+from django.db import models 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
 import uuid
+
+# Create your models here.
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, role='member', **extra_fields):
@@ -39,7 +42,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'  # Fixed typo from USERNAME_FIELS
+    USERNAME_FIELD = 'email'  
     REQUIRED_FIELDS = []
 
     def __str__(self):
