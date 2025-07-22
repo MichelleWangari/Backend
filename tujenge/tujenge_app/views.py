@@ -6,6 +6,8 @@ from .serializers import SignupSerializer
 from .models import User
 from django.utils.crypto import get_random_string
 from django.utils import timezone
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomTokenObtainPairSerializer
 
 # Create your views here.
 class SignupView(APIView):
@@ -20,3 +22,6 @@ class SignupView(APIView):
  
             return Response({"message": "User created. OTP sent to email."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CustomLoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
