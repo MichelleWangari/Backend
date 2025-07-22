@@ -29,7 +29,7 @@ class SignupView(APIView):
             return Response({"message": "User created. OTP sent to email."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class CustomLoginView(TokenObtainPairView):
+class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
