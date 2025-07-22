@@ -8,6 +8,7 @@ from django.utils.crypto import get_random_string
 from django.utils import timezone
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenObtainPairSerializer
+from .serializers import OTPVerificationSerializer
 
 # Create your views here.
 class SignupView(APIView):
@@ -25,3 +26,16 @@ class SignupView(APIView):
 
 class CustomLoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class VerifyOTPView(APIView):
+    def post(self, request):
+        serializer = OTPVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            user.is_verified = True
+            user.otp = None  
+            user.otp_created_at = None
+            user.save()
+            return Response({"message": "OTP verified successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
