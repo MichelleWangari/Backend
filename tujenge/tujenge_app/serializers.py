@@ -9,7 +9,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from django.utils import timezone
 import random
-from .models import User  # adjust the import as needed
+from .models import User, ContactSubmission  # adjust the import as needed
 
 class SignupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -94,3 +94,21 @@ class RoleUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['role']
+
+from rest_framework import serializers
+from .models import ContactSubmission
+
+class ContactSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactSubmission
+        fields = ['name', 'email', 'subject', 'message']
+        extra_kwargs = {
+            'name': {'required': True},
+            'email': {'required': True},
+            'message': {'required': True}
+        }
+
+    def validate_email(self, value):
+        if not value:
+            raise serializers.ValidationError("Email is required")
+        return value

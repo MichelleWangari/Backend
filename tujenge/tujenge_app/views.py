@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import SignupSerializer
-from .models import User
+from .models import User, ContactSubmission
 from django.utils.crypto import get_random_string
 from django.utils import timezone
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -14,6 +14,7 @@ from rest_framework.decorators import permission_classes
 from rest_framework import generics
 from .serializers import RoleUpdateSerializer
 from rest_framework.permissions import BasePermission
+from .serializers import ContactSubmissionSerializer
 
 # Create your views here.
 class SignupView(APIView):
@@ -69,3 +70,20 @@ class RoleBasedDashboard(APIView):
             return Response({"message": "Welcome Member!"})
         else:
             return Response({"error": "Unauthorized"}, status=403)
+
+
+class ContactSubmissionCreateView(generics.CreateAPIView):
+   
+    queryset = ContactSubmission.objects.all()
+    serializer_class = ContactSubmissionSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()  # Just save to DB
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        return Response({
+            "success": True,
+            "message": "Thank you for contacting us!",
+            "redirect_url": "/faq"  # Frontend will handle redirect
+        }, status=status.HTTP_201_CREATED)
