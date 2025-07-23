@@ -21,6 +21,7 @@ class SignupView(APIView):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            print(f"OTP for {user.email} is: {user.otp}")
             otp = get_random_string(length=6, allowed_chars='0123456789')
             user.otp = otp
             user.otp_created_at = timezone.now()
@@ -45,6 +46,7 @@ class VerifyOTPView(APIView):
             user.save()
             return Response({"message": "OTP verified successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+   
 
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):

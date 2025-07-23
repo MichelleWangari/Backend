@@ -1,10 +1,7 @@
-from django.db import models 
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 import uuid
-
-# Create your models here.
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -31,21 +28,23 @@ class User(AbstractBaseUser, PermissionsMixin):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, default='Uknown')  # ✅ Name field added
     email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=20)
+    password = models.CharField(max_length=128)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
     is_verified = models.BooleanField(default=False)
-    otp = models.CharField(max_length=6, blank=True, null=True)  # Fixed typo from "opt" to "otp"
+    otp = models.CharField(max_length=6, blank=True, null=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
 
-    is_active = models.BooleanField(default=True)  # Fixed duplicated field
+    is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(default=timezone.now)  # Renamed from incorrect second is_active
+    date_joined = models.DateTimeField(default=timezone.now)
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'  
-    REQUIRED_FIELDS = []
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['name']  # ✅ Required for createsuperuser
 
     def __str__(self):
-        
         return self.email

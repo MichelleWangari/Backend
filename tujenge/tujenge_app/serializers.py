@@ -6,21 +6,42 @@ from rest_framework_simplejwt.serializers import AuthenticationFailed
 from datetime import timedelta
 from django.utils import timezone
 
+from rest_framework import serializers
+from django.utils import timezone
+import random
+from .models import User  # adjust the import as needed
+
 class SignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email', 'password']
+        fields = ['id', 'email', 'name', 'phone_number', 'password']
         extra_kwargs = {
             'password': {'write_only': True}
         }
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+     
+        otp = str(random.randint(100000, 999999))
+
+
+        validated_data['otp'] = otp
+        validated_data['otp_created_at'] = timezone.now()
+
+    
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            name=validated_data['name'],
+            phone_number=validated_data['phone_number'],
+            password=validated_data['password'],
+            otp=validated_data['otp'],
+            otp_created_at=validated_data['otp_created_at']
+        )
+
+    
+        print(f"OTP for {user.email} is: {otp}")
+
         return user
 
-
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.exceptions import AuthenticationFailed
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
