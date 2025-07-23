@@ -15,6 +15,7 @@ from rest_framework import generics
 from .serializers import RoleUpdateSerializer
 from rest_framework.permissions import BasePermission
 from .serializers import ContactSubmissionSerializer
+from datetime import timedelta
 
 # Create your views here.
 class SignupView(APIView):
@@ -22,12 +23,16 @@ class SignupView(APIView):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            print(f"OTP for {user.email} is: {user.otp}")
+
+            
             otp = get_random_string(length=6, allowed_chars='0123456789')
             user.otp = otp
             user.otp_created_at = timezone.now()
+            user.is_verified = False
             user.save()
- 
+
+            print(f"OTP for {user.email} is: {user.otp}")
+
             return Response({"message": "User created. OTP sent to email."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -38,15 +43,42 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class VerifyOTPView(APIView):
     def post(self, request):
         serializer = OTPVerificationSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            user.is_verified = True
-            
-            user.otp = None  
-            user.otp_created_at = None
-            user.save()
-            return Response({"message": "OTP verified successfully."}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response({
+                "status": "error",
+                "message": "Validation failed",
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.validated_data['user']
+        
+     
+        if timezone.now() > user.otp_created_at + timedelta(minutes=2):
+            return Response({
+                "status": False,
+                "message": "OTP has expired",
+                "should_resend": True  
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        if user.is_verified:
+            return Response({
+                "status": "success",
+                "message": "Account already verified"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        user.is_verified = True
+        user.otp = None
+        user.otp_created_at = None
+        user.save()
+
+        return Response({
+            "success": True,
+            "message": "OTP verified successfully",
+            "email": user.email,  
+            "redirect_to": "/dashboard"  
+        }, status=status.HTTP_200_OK)
    
 
 class IsAdmin(BasePermission):
