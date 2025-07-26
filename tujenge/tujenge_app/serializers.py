@@ -1,69 +1,57 @@
 # chama_app/serializers.py
 from rest_framework import serializers
-from .models import User
+from .models import User , Chama
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.serializers import AuthenticationFailed
 from datetime import timedelta
 from django.utils import timezone
-
-from rest_framework import serializers
-from django.utils import timezone
-import random
-from .models import User, ContactSubmission  # adjust the import as needed
+from .models import Chama
+from .models import Contribution
+from .models import User, ContactSubmission 
 
 class SignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone_number', 'password']
+        fields = ['email', 'password']
         extra_kwargs = {
             'password': {'write_only': True}
         }
 
     def create(self, validated_data):
-     
-        otp = str(random.randint(100000, 999999))
-
-
-        validated_data['otp'] = otp
-        validated_data['otp_created_at'] = timezone.now()
-
-    
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            name=validated_data['name'],
-            phone_number=validated_data['phone_number'],
-            password=validated_data['password'],
-            otp=validated_data['otp'],
-            otp_created_at=validated_data['otp_created_at']
-        )
-
-    
-        print(f"OTP for {user.email} is: {otp}")
-
+        try:
+            chama = Chama.objects.get(name="chama1")
+        except Chama.DoesNotExist:
+            raise serializers.ValidationError("Default chama 'chama1' does not exist.")
+        user = User.objects.create_user(**validated_data)
+        user.chama = chama
+        user.save()
         return user
 
+
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        
         token['role'] = user.role
         token['email'] = user.email
         return token
 
     def validate(self, attrs):
-       
         attrs['username'] = attrs.get('email')
-
         data = super().validate(attrs)
 
-        
         if not self.user.is_verified:
             raise AuthenticationFailed("Please verify your account with the OTP sent to your email.")
 
-        return data
+        # Add these lines:
+        data['role'] = self.user.role
+        data['is_verified'] = self.user.is_verified
+        data['email'] = self.user.email
 
+        return data
 class OTPVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
@@ -95,8 +83,23 @@ class RoleUpdateSerializer(serializers.ModelSerializer):
         model = User
         fields = ['role']
 
-from rest_framework import serializers
-from .models import ContactSubmission
+class ChamaMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'role', 'is_verified']
+
+class ChamaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chama
+        fields = ['id', 'name', 'description', 'created_at']
+
+class ContributionSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = Contribution
+        fields = ['id', 'amount', 'month', 'chama', 'user', 'user_email', 'date']
+        read_only_fields = ['user', 'date']
 
 class ContactSubmissionSerializer(serializers.ModelSerializer):
     class Meta:

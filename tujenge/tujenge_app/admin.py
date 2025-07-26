@@ -1,24 +1,27 @@
-# admin.py
-
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User
+from .models import User, Chama, Contribution
 
+
+# Register your models here.
 class UserAdmin(BaseUserAdmin):
+    model = User
+    list_display = ('email', 'role', 'is_verified', 'is_staff')
+    list_filter = ('role', 'is_verified')
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        ('Personal Info', {'fields': ('name', 'phone_number')}),
-        ('Permissions', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+        (None, {'fields': ('email', 'password', 'role', 'chama', 'otp', 'otp_created_at')}),
+        ('Permissions', {'fields': ('is_staff', 'is_superuser', 'groups', 'user_permissions')}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'name', 'phone_number', 'password1', 'password2'),
+            'fields': ('email', 'role', 'chama', 'password1', 'password2'),
         }),
     )
-    list_display = ('email', 'name', 'phone_number', 'role', 'is_staff')
-    search_fields = ('email', 'name')
+    search_fields = ('email',)
     ordering = ('email',)
 
 admin.site.register(User, UserAdmin)
+admin.site.register(Chama)
+admin.site.register(Contribution) 
+
