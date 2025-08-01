@@ -5,6 +5,9 @@ from django.utils import timezone
 import uuid
 from django.conf import settings
 
+
+
+#My models.py isnt working
 # Create your models here.
 
 class UserManager(BaseUserManager):
@@ -65,7 +68,7 @@ class Contribution(models.Model):
     chama = models.ForeignKey(Chama, on_delete=models.CASCADE, related_name='contributions')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date = models.DateField(auto_now_add=True)
-    month = models.CharField(max_length=20)  # e.g., "July 2025"
+    month = models.CharField(max_length=20)  
 
     def __str__(self):
         return f"{self.user.email} - {self.amount} ({self.month})"
@@ -75,17 +78,28 @@ class Loan(models.Model):
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
-        ('repaid', 'Repaid'),
+        ('paid', 'Paid'),
     ]
-
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    chama = models.ForeignKey(Chama, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='loans')
+    chama = models.ForeignKey(Chama, on_delete=models.CASCADE, related_name='loans')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     purpose = models.TextField()
-    duration = models.PositiveIntegerField(help_text="Loan duration in months")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    date_requested = models.DateTimeField(auto_now_add=True)
+    requested_date = models.DateTimeField(auto_now_add=True)
+    approved_date = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_loans')
 
     def __str__(self):
-        return f"{self.user.email} - {self.amount} Ksh - {self.status}"
+        return f"{self.user.email} - {self.amount} ({self.status})"
+    
+class PaymentTransaction(models.Model):
+    phone = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_id = models.CharField(max_length=100, unique=True)  # M-Pesa transaction ID
+    checkout_request_id = models.CharField(max_length=100)          # STK Push ID
+    result_code = models.IntegerField()                             # 0 = success
+    result_description = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{self.phone} - {self.transaction_id}"

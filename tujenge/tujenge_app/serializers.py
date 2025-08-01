@@ -102,15 +102,18 @@ class ContributionSerializer(serializers.ModelSerializer):
         fields = ['id', 'amount', 'month', 'chama', 'user', 'user_email', 'date']
         read_only_fields = ['user', 'date']
 
+
+from .models import Loan
+
 class LoanSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)
-
+    approved_by_email = serializers.EmailField(source='approved_by.email', read_only=True)
+    
     class Meta:
         model = Loan
-        fields = ['id', 'user_email', 'amount', 'purpose', 'duration', 'status', 'date_requested']
-        read_only_fields = ['id', 'status', 'date_requested']
-
-
+        fields = ['id', 'amount', 'purpose', 'status', 'requested_date', 'approved_date', 'user_email', 'approved_by_email', 'chama']
+        read_only_fields = ['user', 'status', 'requested_date', 'approved_date', 'approved_by']
+        
 class VaultSummarySerializer(serializers.Serializer):
     total_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
     total_contributions = serializers.DecimalField(max_digits=12, decimal_places=2)

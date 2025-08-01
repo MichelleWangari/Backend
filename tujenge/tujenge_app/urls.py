@@ -1,6 +1,5 @@
 from django.urls import path
 from .views import SignupView
-
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import VerifyOTPView
 from .views import RoleUpdateView
@@ -12,9 +11,14 @@ from .views import UserProfileView
 from .views import MyContributionsView
 from .views import AllMembersView
 from .views import AllContributionsView
+from .views import MonthlyProgressView
+from .views import LoanListCreateView
+from .views import AllLoansView
+from .views import LoanUpdateView
 from .views import LoanView
 from .views import VaultStatsView
 from .views import VaultSummaryView, VaultGrowthView, VaultPieView, VaultActivityView
+from .views import STKPushView
 
 urlpatterns = [
     path('signup/', SignupView.as_view(), name='signup'),
@@ -28,6 +32,7 @@ urlpatterns = [
     path('chama/<int:chama_id>/contributions/', ContributionListCreateView.as_view(), name='contributions-list-create'),
     path('user/profile/', UserProfileView.as_view(), name='user-profile'),
     path('vaults-stats/', VaultStatsView.as_view(), name='vault-stats'),
+    path('payments/stk-push/', STKPushView.as_view(), name='stk-push'),
      
 ]
 
@@ -53,6 +58,15 @@ urlpatterns += [
     path('activity/', VaultActivityView.as_view()),
 ]
 
+urlpatterns += [
+    path('chama/<int:chama_id>/progress/', MonthlyProgressView.as_view(), name='monthly-progress'),
+]
+    
 
+urlpatterns += [
+    path('loans/', LoanListCreateView.as_view(), name='loans-list-create'),
+    path('loans/all/', AllLoansView.as_view(), name='all-loans'),
+    path('loans/<int:pk>/update/', LoanUpdateView.as_view(), name='loan-update'),
+]
 
     

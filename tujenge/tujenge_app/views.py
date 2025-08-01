@@ -27,6 +27,7 @@ from collections import defaultdict
 from .serializers import VaultSummarySerializer, VaultGrowthSerializer,VaultPieSerializer, VaultActivitySerializer
 from django.utils.timezone import now
 import calendar
+from .mpesa import lipa_na_mpesa
 
 # Create your views here.
 class SignupView(APIView):
@@ -100,14 +101,9 @@ class ContributionListCreateView(generics.ListCreateAPIView):
         return Contribution.objects.filter(chama_id=chama_id).order_by('-date')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user , chama=self.request.user.chama)
         
 
-class ContributionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Contribution
-        fields = ['id', 'amount', 'month', 'chama', 'user', 'date']
-        read_only_fields = ['user', 'date']        
 
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -256,7 +252,13 @@ class VaultGrowthView(APIView):
 
     
         month_order = list(calendar.month_name)[1:]  # Jan to Dec
-        result = [{"month": month, "balance": month_totals.get(month, 0)} for month in month_order if month_totals.get(month)]
+        result = []
+        for month in month_order :
+            if month in month_totals:
+                result.append({
+                    "month" : month,
+                    "balance" : month_totals[month]
+                })
 
         serializer = VaultGrowthSerializer(result, many=True)
         return Response(serializer.data)
@@ -323,3 +325,93 @@ class VaultActivityView(APIView):
         serializer = VaultActivitySerializer(activity_list, many=True)
         return Response(serializer.data)
 
+class STKPushView(APIView):
+    def post(self, request):
+        phone = request.data.get('phone')
+        amount = request.data.get('amount')
+
+        if not phone or not amount:
+            return Response({"error": "Phone and amount are required"}, status=400)
+
+        result = lipa_na_mpesa(phone, amount)
+
+        if result['success']:
+            return Response({"message": "STK Push initiated", "checkout_request_id": result['checkout_request_id']})
+        else:
+            return Response({"error": result['message']}, status=500)
+
+from django.db.models import Sum
+from .models import Contribution
+
+class MonthlyProgressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, chama_id):
+        # Get all contributions for the user in this chama
+        contributions = Contribution.objects.filter(
+            chama_id=chama_id,
+            user=request.user
+        ).values('month').annotate(
+            total_amount=Sum('amount')
+        ).order_by('-month')
+
+        # Calculate progress for each month
+        monthly_progress = []
+        target = 2000
+
+        for contrib in contributions:
+            month = contrib['month']
+            total_amount = float(contrib['total_amount'])
+            progress_percent = min(100, (total_amount / target) * 100)
+            
+            monthly_progress.append({
+                'month': month,
+                'contributed': total_amount,
+                'target': target,
+                'progress_percent': round(progress_percent, 1),
+                'is_complete': total_amount >= target
+            })
+
+        return Response({
+            'monthly_progress': monthly_progress,
+            'target': target
+        })
+
+
+from .models import Loan
+from .serializers import LoanSerializer
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
+
+class LoanListCreateView(generics.ListCreateAPIView):
+    serializer_class = LoanSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Loan.objects.filter(user=self.request.user).order_by('-requested_date')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, chama=self.request.user.chama)
+
+class AllLoansView(generics.ListAPIView):
+    serializer_class = LoanSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Only show loans for the user's chama
+        return Loan.objects.filter(chama=self.request.user.chama).order_by('-requested_date')
+
+class LoanUpdateView(generics.UpdateAPIView):
+    queryset = Loan.objects.all()
+    serializer_class = LoanSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_update(self, serializer):
+        if serializer.instance.status == 'pending' and self.request.data.get('status') in ['approved', 'rejected']:
+            serializer.save(
+                approved_date=timezone.now(),
+                approved_by=self.request.user
+            )
+        else:
+            serializer.save()
